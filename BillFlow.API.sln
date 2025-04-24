@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35806.99 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BillFlow.API", "BillFlow.API.csproj", "{27D146D3-5C5D-4DCA-97B1-FF1C2EF2C4E0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{27D146D3-5C5D-4DCA-97B1-FF1C2EF2C4E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27D146D3-5C5D-4DCA-97B1-FF1C2EF2C4E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27D146D3-5C5D-4DCA-97B1-FF1C2EF2C4E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27D146D3-5C5D-4DCA-97B1-FF1C2EF2C4E0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BB2994AA-4B70-49D3-B0A3-B2C83CCF6B39}
+	EndGlobalSection
+EndGlobal
