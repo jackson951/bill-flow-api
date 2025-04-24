@@ -31,5 +31,5 @@ BillFlow is a full-featured, multi-tenant invoicing platform built with ASP.NET 
 - A Stripe account for payment integration
 
 #Running project
-To run the API without HTTPS certificate issues, use the HTTP profile by running `dotnet run --launch-profile http`, then open `http://localhost:5166/swagger` in your browser to access the Swagger UI for testing and exploring the API.
+- To run the API without HTTPS certificate issues, use the HTTP profile by running `dotnet run --launch-profile http`, then open `http://localhost:5166/swagger` in your browser to access the Swagger UI for testing and exploring the API.
 
