@@ -1,44 +1,37 @@
-using BillFlow.API.Models;
+﻿using BillFlow.API.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+// Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<InvoiceProDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Configure EF Core with SQL Server
+builder.Services.AddDbContext<InvoiceProDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure() // ✅ Add this line
+    )
+);
+
+// Configure CORS for React frontend
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        policy.WithOrigins("http://localhost:3000") // React dev server
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowReactApp",
-        policy => policy
-            .WithOrigins("http://localhost:3000") // React dev server
-            .AllowAnyHeader()
-            .AllowAnyMethod());
-});
-
-
-
-
-
-
-
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure middleware pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -46,7 +39,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+
+// Apply CORS policy
 app.UseCors("AllowReactApp");
 
 app.UseAuthorization();
