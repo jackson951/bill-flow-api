@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BillFlow.API.Models;
 
-public partial class User
+public partial class Employee
 {
     public Guid Id { get; set; }
 
@@ -21,5 +21,7 @@ public partial class User
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual ICollection<Employee> Employees { get; set; } = new List<Employee>();
+    public Guid UserId { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

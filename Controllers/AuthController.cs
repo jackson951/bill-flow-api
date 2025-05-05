@@ -46,37 +46,48 @@ public class AuthController : ControllerBase
 
         return Ok("User registered successfully.");
     }
-
-
     [HttpPost("login")]
     public async Task<IActionResult> Login(UserLoginDto dto)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-        if (user == null)
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
         {
-            return Unauthorized("Invalid email or password.");
+            return BadRequest("Email and password are required.");
         }
 
-        var hashedInputPassword = HashPassword(dto.Password);
-        if (user.PasswordHash != hashedInputPassword)
+        try
         {
-            return Unauthorized("Invalid email or password.");
-        }
-
-        // For now, just return a success message or minimal user info
-        return Ok(new
-        {
-            message = "Login successful",
-            user = new
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null)
             {
-                user.Id,
-                user.FullName,
-                user.Email,
-                user.CompanyName,
-                user.Role
+                return Unauthorized("Invalid email or password.");
             }
-        });
+
+            var hashedInputPassword = HashPassword(dto.Password);
+            if (user.PasswordHash != hashedInputPassword)
+            {
+                return Unauthorized("Invalid email or password.");
+            }
+
+            return Ok(new
+            {
+                message = "Login successful",
+                user = new
+                {
+                    user.Id,
+                    user.FullName,
+                    user.Email,
+                    user.CompanyName,
+                    user.Role
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            // TEMPORARY: Show full error for debugging
+            return StatusCode(500, $"Internal Server Error: {ex.Message}");
+        }
     }
+
 
     private string HashPassword(string password)
     {
