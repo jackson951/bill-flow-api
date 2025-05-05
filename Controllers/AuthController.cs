@@ -47,6 +47,37 @@ public class AuthController : ControllerBase
         return Ok("User registered successfully.");
     }
 
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(UserLoginDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        if (user == null)
+        {
+            return Unauthorized("Invalid email or password.");
+        }
+
+        var hashedInputPassword = HashPassword(dto.Password);
+        if (user.PasswordHash != hashedInputPassword)
+        {
+            return Unauthorized("Invalid email or password.");
+        }
+
+        // For now, just return a success message or minimal user info
+        return Ok(new
+        {
+            message = "Login successful",
+            user = new
+            {
+                user.Id,
+                user.FullName,
+                user.Email,
+                user.CompanyName,
+                user.Role
+            }
+        });
+    }
+
     private string HashPassword(string password)
     {
         using var sha256 = SHA256.Create();
