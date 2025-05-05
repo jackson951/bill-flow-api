@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
+using System.Security.Claims;
 using System.Text;
 using BillFlow.API.Models;
 using BillFlow.API.DTOs;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class EmployeeController : ControllerBase
@@ -24,6 +27,12 @@ public class EmployeeController : ControllerBase
             return BadRequest("Email already in use.");
         }
 
+        var userIdClaim = User.FindFirst("id");
+        if (userIdClaim == null)
+            return Unauthorized("User ID not found in token.");
+
+        Guid userId = Guid.Parse(userIdClaim.Value);
+
         var employee = new Employee
         {
             Id = Guid.NewGuid(),
@@ -33,8 +42,7 @@ public class EmployeeController : ControllerBase
             Role = dto.Role,
             Verified = false,
             CreatedAt = DateTime.UtcNow,
-            UserId = /* you should get the current user's ID here */
-                Guid.Parse("some-user-id") // Replace with actual logic
+            UserId = userId
         };
 
         _context.Employees.Add(employee);
@@ -65,7 +73,14 @@ public class EmployeeController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllEmployees()
     {
+        var userIdClaim = User.FindFirst("id");
+        if (userIdClaim == null)
+            return Unauthorized("User ID not found in token.");
+
+        Guid userId = Guid.Parse(userIdClaim.Value);
+
         var employees = await _context.Employees
+            .Where(e => e.UserId == userId)
             .Select(e => new EmployeeResponseDto
             {
                 Id = e.Id,
