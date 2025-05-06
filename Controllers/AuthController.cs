@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using BillFlow.API.Models;
@@ -12,10 +15,13 @@ namespace BillFlow.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly InvoiceProDbContext _context;
+        private readonly IConfiguration _config;
 
-        public AuthController(InvoiceProDbContext context)
+        public AuthController(InvoiceProDbContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
+
         }
 
         [HttpPost("register")]
@@ -47,37 +53,43 @@ namespace BillFlow.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(UserLoginDto dto)
         {
-            try
-            {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-                if (user == null)
-                    return Unauthorized("Invalid email or password.");
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null || user.PasswordHash != HashPassword(dto.Password))
+                return Unauthorized("Invalid email or password.");
 
-                var hashedInputPassword = HashPassword(dto.Password);
-                if (user.PasswordHash != hashedInputPassword)
-                    return Unauthorized("Invalid email or password.");
-
-                return Ok(new
-                {
-                    message = "Login successful",
-                    user = new
-                    {
-                        user.Id,
-                        user.FullName,
-                        user.Email,
-                        user.CompanyName,
-                        user.Role
-                    }
-                });
-            }
-            catch (Exception ex)
+            var claims = new[]
             {
-                return StatusCode(500, new
+                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                new Claim("id", user.Id.ToString()),
+                new Claim("role", user.Role),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(2),
+                signingCredentials: creds
+            );
+
+            var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+
+            return Ok(new
+            {
+                token = jwt,
+                user = new
                 {
-                    error = ex.Message,
-                    stackTrace = ex.StackTrace
-                });
-            }
+                    user.Id,
+                    user.FullName,
+                    user.Email,
+                    user.CompanyName,
+                    user.Role
+                }
+            });
         }
 
         private string HashPassword(string password)

@@ -1,58 +1,67 @@
 ﻿using System;
-using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace BillFlow.API.Models;
-
-public partial class InvoiceProDbContext : DbContext
+namespace BillFlow.API.Models
 {
-    public InvoiceProDbContext(DbContextOptions<InvoiceProDbContext> options)
-        : base(options)
+    public partial class InvoiceProDbContext : DbContext
     {
-    }
-
-    public virtual DbSet<Employee> Employees { get; set; }
-
-    public virtual DbSet<User> Users { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Employee>(entity =>
+        public InvoiceProDbContext()
         {
-            entity.HasKey(e => e.Id).HasName("PK__Employee__3214EC0781EDC3D1");
+        }
 
-            entity.HasIndex(e => e.Email, "UQ__Employee__A9D10534DAC91DE9").IsUnique();
-
-            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
-            entity.Property(e => e.CompanyName).HasMaxLength(150);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Email).HasMaxLength(255);
-            entity.Property(e => e.FullName).HasMaxLength(100);
-            entity.Property(e => e.PasswordHash).HasMaxLength(255);
-            entity.Property(e => e.Role).HasMaxLength(50);
-
-            entity.HasOne(d => d.User).WithMany(p => p.Employees)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK_Employees_Users");
-        });
-
-        modelBuilder.Entity<User>(entity =>
+        public InvoiceProDbContext(DbContextOptions<InvoiceProDbContext> options)
+            : base(options)
         {
-            entity.HasKey(e => e.Id).HasName("PK__Users__3214EC075FE42541");
+        }
 
-            entity.HasIndex(e => e.Email, "UQ__Users__A9D1053465E899FA").IsUnique();
+        public virtual DbSet<Customer> Customers { get; set; }
+        public virtual DbSet<Employee> Employees { get; set; }
+        public virtual DbSet<User> Users { get; set; }
 
-            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
-            entity.Property(e => e.CompanyName).HasMaxLength(150);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Email).HasMaxLength(255);
-            entity.Property(e => e.FullName).HasMaxLength(100);
-            entity.Property(e => e.PasswordHash).HasMaxLength(255);
-            entity.Property(e => e.Role).HasMaxLength(50);
-        });
+        // Removed hardcoded connection string to follow best practices
+        // Configuration now comes from Program.cs via dependency injection
 
-        OnModelCreatingPartial(modelBuilder);
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Customer>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).HasMaxLength(100);
+                entity.Property(e => e.Email).HasMaxLength(100);
+                entity.Property(e => e.Phone).HasMaxLength(20);
+                entity.Property(e => e.Address).HasMaxLength(200);
+                entity.Property(e => e.Type).HasMaxLength(50).HasDefaultValue("Individual");
+            });
+
+            modelBuilder.Entity<Employee>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.FullName).HasMaxLength(100).IsRequired();
+                entity.Property(e => e.Email).HasMaxLength(100).IsRequired();
+                entity.Property(e => e.PasswordHash).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.CompanyName).HasMaxLength(100).IsRequired();
+                entity.Property(e => e.Role).HasMaxLength(50).IsRequired();
+                entity.Property(e => e.Status).HasMaxLength(50);
+                entity.Property(e => e.Permissions).HasMaxLength(500);
+
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.Employees)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.FullName).HasMaxLength(100).IsRequired();
+                entity.Property(e => e.Email).HasMaxLength(100).IsRequired();
+                entity.Property(e => e.PasswordHash).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.CompanyName).HasMaxLength(100).IsRequired();
+            });
+
+            OnModelCreatingPartial(modelBuilder);
+        }
+
+        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }
-
-    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

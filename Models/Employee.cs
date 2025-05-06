@@ -23,5 +23,9 @@ public partial class Employee
 
     public Guid UserId { get; set; }
 
+    public string? Status { get; set; }
+
+    public string? Permissions { get; set; }
+
     public virtual User User { get; set; } = null!;
 }

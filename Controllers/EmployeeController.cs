@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using BillFlow.API.Models;
 using BillFlow.API.DTOs;
@@ -24,14 +24,20 @@ public class EmployeeController : ControllerBase
     {
         if (await _context.Employees.AnyAsync(e => e.Email == dto.Email))
         {
-            return BadRequest("Email already in use.");
+            return BadRequest(new { error = "Email already in use." });
         }
 
         var userIdClaim = User.FindFirst("id");
-        if (userIdClaim == null)
-            return Unauthorized("User ID not found in token.");
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out Guid userId))
+        {
+            return Unauthorized(new { error = "Invalid or missing user ID in token." });
+        }
 
-        Guid userId = Guid.Parse(userIdClaim.Value);
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            return NotFound(new { error = "Admin user not found." });
+        }
 
         var employee = new Employee
         {
@@ -42,13 +48,28 @@ public class EmployeeController : ControllerBase
             Role = dto.Role,
             Verified = false,
             CreatedAt = DateTime.UtcNow,
-            UserId = userId
+            UserId = userId,
+            CompanyName = user.CompanyName,
+            Status = dto.Status,
+            Permissions = dto.Permissions
         };
 
         _context.Employees.Add(employee);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "Employee created." });
+        var response = new EmployeeResponseDto
+        {
+            Id = employee.Id,
+            FullName = employee.FullName,
+            Email = employee.Email,
+            Role = employee.Role,
+            Verified = employee.Verified,
+            CreatedAt = employee.CreatedAt,
+            Status = employee.Status,
+            Permissions = employee.Permissions
+        };
+
+        return Ok(new { message = "Employee created.", employee = response });
     }
 
     [HttpGet("{id}")]
@@ -64,7 +85,9 @@ public class EmployeeController : ControllerBase
             Email = employee.Email,
             Role = employee.Role,
             Verified = employee.Verified,
-            CreatedAt = employee.CreatedAt
+            CreatedAt = employee.CreatedAt,
+            Status = employee.Status,
+            Permissions = employee.Permissions
         };
 
         return Ok(response);
@@ -74,10 +97,10 @@ public class EmployeeController : ControllerBase
     public async Task<IActionResult> GetAllEmployees()
     {
         var userIdClaim = User.FindFirst("id");
-        if (userIdClaim == null)
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out Guid userId))
+        {
             return Unauthorized("User ID not found in token.");
-
-        Guid userId = Guid.Parse(userIdClaim.Value);
+        }
 
         var employees = await _context.Employees
             .Where(e => e.UserId == userId)
@@ -88,7 +111,9 @@ public class EmployeeController : ControllerBase
                 Email = e.Email,
                 Role = e.Role,
                 Verified = e.Verified,
-                CreatedAt = e.CreatedAt
+                CreatedAt = e.CreatedAt,
+                Status = e.Status,
+                Permissions = e.Permissions
             })
             .ToListAsync();
 
@@ -105,8 +130,11 @@ public class EmployeeController : ControllerBase
         employee.Email = dto.Email;
         employee.Role = dto.Role;
         employee.PasswordHash = HashPassword(dto.Password);
+        employee.Status = dto.Status;
+        employee.Permissions = dto.Permissions;
 
         await _context.SaveChangesAsync();
+
         return Ok("Employee updated.");
     }
 
@@ -118,9 +146,11 @@ public class EmployeeController : ControllerBase
 
         _context.Employees.Remove(employee);
         await _context.SaveChangesAsync();
+
         return Ok("Employee deleted.");
     }
 
+    // Helper method for hashing
     private string HashPassword(string password)
     {
         using var sha = SHA256.Create();
