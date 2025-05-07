@@ -44,9 +44,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "https://jackson951.github.io" // 👈 GitHub Pages base domain
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
