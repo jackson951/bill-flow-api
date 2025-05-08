@@ -46,7 +46,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "http://localhost:3000",
-                "https://jackson951.github.io" // 👈 GitHub Pages base domain
+                "https://jackson951.github.io", // 👈 GitHub Pages base domain
+                "https://my-invoicing-system-app.netlify.app"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
