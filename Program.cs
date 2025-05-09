@@ -67,11 +67,33 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidateLifetime = true,
+            ValidateLifetime = true,  // 🔑 Ensures token expiration is validated
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ClockSkew = TimeSpan.Zero // Optional: to ensure that there's no "grace period" after expiration
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                // Log or handle failed authentication (e.g., expired token)
+                if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                {
+                    // Handle expired token specifically if needed
+                }
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                // This will trigger on 401 Unauthorized (e.g., when the token is expired)
+                context.Response.Headers["Token-Expired"] = "true"; // Set header using the indexer
+                // Or, if you want to append:
+                // context.Response.Headers.Append("Token-Expired", "true");
+                return Task.CompletedTask;
+            }
         };
     });
 
