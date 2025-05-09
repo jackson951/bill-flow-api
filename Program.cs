@@ -3,17 +3,53 @@ using BillFlow.API.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 🔐 Load JWT settings from configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = jwtSettings["Key"];
+var secretKey = jwtSettings["Key"]!;
 
 // ✅ Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// ✅ Swagger + JWT Bearer configuration
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "BillFlow API",
+        Version = "v1" // 👈 Important! This must be present and valid
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        Description = "Enter 'Bearer' followed by your JWT token"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
 
 // ✅ Configure EF Core with SQL Server
 builder.Services.AddDbContext<InvoiceProDbContext>(options =>
@@ -46,7 +82,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "http://localhost:3000",
-                "https://jackson951.github.io", // 👈 GitHub Pages base domain
+                "https://jackson951.github.io",
                 "https://my-invoicing-system-app.netlify.app"
             )
             .AllowAnyHeader()
@@ -67,7 +103,7 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowReactApp");
 
-app.UseAuthentication(); // 🔐 Add authentication before authorization
+app.UseAuthentication(); // 🔐 Authentication first
 app.UseAuthorization();
 
 app.MapControllers();

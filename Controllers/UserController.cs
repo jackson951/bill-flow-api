@@ -4,11 +4,13 @@ using System.Security.Cryptography;
 using System.Text;
 using BillFlow.API.Models;
 using BillFlow.API.DTOs;
+using Microsoft.AspNetCore.Authorization; // Add this import
 
 namespace BillFlow.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]  // Protect all actions in the controller with authorization
 public class UserController : ControllerBase
 {
     private readonly InvoiceProDbContext _context;
@@ -18,6 +20,7 @@ public class UserController : ControllerBase
         _context = context;
     }
 
+    // Get user profile
     [HttpGet("{id}")]
     public async Task<IActionResult> GetProfile(Guid id)
     {
@@ -38,6 +41,7 @@ public class UserController : ControllerBase
         return Ok(profile);
     }
 
+    // Update user profile
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProfile(Guid id, UpdateUserProfileDto dto)
     {
@@ -51,6 +55,7 @@ public class UserController : ControllerBase
         return Ok("Profile updated.");
     }
 
+    // Change password
     [HttpPost("{id}/change-password")]
     public async Task<IActionResult> ChangePassword(Guid id, ChangePasswordDto dto)
     {
@@ -66,6 +71,7 @@ public class UserController : ControllerBase
         return Ok("Password changed.");
     }
 
+    // Forgot password
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
     {
@@ -78,6 +84,7 @@ public class UserController : ControllerBase
         return Ok(new { Message = "Reset token generated.", Token = token });
     }
 
+    // Reset password
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
     {
@@ -94,6 +101,7 @@ public class UserController : ControllerBase
         return Ok("Password reset successful.");
     }
 
+    // Verify email
     [HttpPost("verify-email")]
     public async Task<IActionResult> VerifyEmail(VerifyEmailDto dto)
     {
@@ -109,7 +117,9 @@ public class UserController : ControllerBase
         return Ok("Email verified successfully.");
     }
 
+    // Get list of employees (Only admin users can access)
     [HttpGet("employees")]
+    [Authorize(Roles = "Admin")]  // Add specific role-based authorization if needed
     public async Task<IActionResult> GetEmployees()
     {
         var employees = await _context.Users
@@ -129,7 +139,9 @@ public class UserController : ControllerBase
         return Ok(employees);
     }
 
+    // Delete a user
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")] // Only admin can delete users
     public async Task<IActionResult> DeleteUser(Guid id)
     {
         var user = await _context.Users.FindAsync(id);
